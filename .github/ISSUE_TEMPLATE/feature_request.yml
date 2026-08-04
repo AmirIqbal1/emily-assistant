@@ -1,0 +1,25 @@
+name: Feature request
+description: Suggest a local-first Emily capability
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or use case
+      description: What should Emily help a user accomplish?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed approach
+      description: Explain the behavior, including local/offline operation and optional dependencies.
+    validations:
+      required: true
+  - type: textarea
+    id: privacy
+    attributes:
+      label: Privacy and security considerations
+      description: Describe data, credentials, network access, and user consent involved.
+

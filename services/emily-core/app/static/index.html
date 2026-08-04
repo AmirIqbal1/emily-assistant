@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Emily Core local assistant interface">
+    <title>Emily Core</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="/static/app.js" defer></script>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div>
+          <div class="eyebrow">Core v0.1</div>
+          <h1>Emily</h1>
+        </div>
+        <button id="refresh-status" class="status-button" type="button" aria-label="Refresh system status">
+          <span id="status-dot" class="status-dot pending" aria-hidden="true"></span>
+          <span id="status-text">Checking status</span>
+        </button>
+      </header>
+
+      <section id="messages" class="messages" aria-live="polite" aria-label="Conversation">
+        <article class="message assistant">
+          <span class="message-label">Emily</span>
+          <p>Hello. I’m Emily. Emily Core is ready.</p>
+        </article>
+      </section>
+
+      <p id="error" class="error" role="alert" hidden></p>
+      <div id="loading" class="loading" hidden>Emily is thinking…</div>
+
+      <form id="chat-form" class="composer">
+        <label class="sr-only" for="message-input">Message Emily</label>
+        <input
+          id="message-input"
+          name="message"
+          type="text"
+          maxlength="1000"
+          autocomplete="off"
+          placeholder="Message Emily…"
+          required
+        >
+        <button id="send-button" type="submit">Send</button>
+      </form>
+
+      <footer>
+        <button id="clear-button" class="text-button" type="button">Clear conversation</button>
+        <span>Private, local, open source.</span>
+      </footer>
+    </main>
+  </body>
+</html>
+

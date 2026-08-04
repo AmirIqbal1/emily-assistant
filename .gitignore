@@ -1,0 +1,17 @@
+.env
+runtime/*
+!runtime/.gitkeep
+backups/*
+!backups/.gitkeep
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+htmlcov/
+.venv/
+.DS_Store
+*.log
+*.egg-info/
+dist/
+build/
+

@@ -1,0 +1,127 @@
+:root {
+  color-scheme: dark;
+  --background: #0b0d12;
+  --panel: #131720;
+  --panel-light: #1a202c;
+  --border: #2a3140;
+  --text: #f4f7fb;
+  --muted: #9ba6b7;
+  --accent: #73d4c4;
+  --accent-strong: #92e5d7;
+  --danger: #ff8585;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(circle at top, #17202b 0, var(--background) 42%);
+  color: var(--text);
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+button, input { font: inherit; }
+
+button { cursor: pointer; }
+button:disabled { cursor: wait; opacity: 0.55; }
+
+.shell {
+  width: min(760px, calc(100% - 32px));
+  min-height: calc(100vh - 48px);
+  margin: 24px auto;
+  display: grid;
+  grid-template-rows: auto minmax(280px, 1fr) auto auto auto;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--panel) 94%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  box-shadow: 0 24px 80px rgb(0 0 0 / 35%);
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 24px 26px;
+  border-bottom: 1px solid var(--border);
+}
+
+.eyebrow {
+  margin-bottom: 2px;
+  color: var(--accent);
+  font-size: 0.73rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+h1 { margin: 0; font-size: 1.9rem; letter-spacing: -0.04em; }
+
+.status-button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 12px;
+  color: var(--muted);
+  background: var(--panel-light);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.78rem;
+}
+
+.status-button:hover { color: var(--text); border-color: #3c4659; }
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #e0b85c;
+  box-shadow: 0 0 0 3px rgb(224 184 92 / 13%);
+}
+
+.status-dot.online { background: var(--accent); box-shadow: 0 0 0 3px rgb(115 212 196 / 13%); }
+.status-dot.offline { background: var(--danger); box-shadow: 0 0 0 3px rgb(255 133 133 / 13%); }
+
+.messages {
+  min-height: 0;
+  padding: 28px 26px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.message { max-width: 82%; }
+.message.user { align-self: flex-end; }
+.message-label { display: block; margin: 0 0 6px 4px; color: var(--muted); font-size: 0.72rem; }
+.message.user .message-label { text-align: right; margin-right: 4px; }
+.message p { margin: 0; padding: 12px 15px; line-height: 1.5; background: var(--panel-light); border: 1px solid var(--border); border-radius: 15px 15px 15px 4px; }
+.message.user p { color: #081411; background: var(--accent); border-color: var(--accent); border-radius: 15px 15px 4px 15px; }
+
+.error, .loading { margin: 0 26px 10px; font-size: 0.84rem; }
+.error { color: var(--danger); }
+.loading { color: var(--muted); }
+
+.composer { display: flex; gap: 10px; padding: 14px 18px; border-top: 1px solid var(--border); }
+.composer input { flex: 1; min-width: 0; padding: 12px 15px; color: var(--text); background: #0e1118; border: 1px solid var(--border); border-radius: 11px; outline: none; }
+.composer input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgb(115 212 196 / 10%); }
+.composer button { padding: 0 20px; color: #071512; font-weight: 700; background: var(--accent); border: 0; border-radius: 11px; }
+.composer button:hover { background: var(--accent-strong); }
+
+footer { display: flex; justify-content: space-between; gap: 16px; padding: 0 22px 15px; color: var(--muted); font-size: 0.74rem; }
+.text-button { padding: 0; color: var(--muted); background: none; border: 0; text-decoration: underline; text-underline-offset: 3px; }
+.text-button:hover { color: var(--text); }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+@media (max-width: 600px) {
+  .shell { width: 100%; min-height: 100vh; margin: 0; border: 0; border-radius: 0; }
+  .topbar { padding: 20px 18px; }
+  .messages { padding: 22px 18px; }
+  .message { max-width: 90%; }
+  .status-button { max-width: 48%; }
+  .status-button span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  footer span { display: none; }
+}
+
