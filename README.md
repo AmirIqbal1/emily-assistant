@@ -37,7 +37,7 @@ No microphone, speaker, Raspberry Pi, GPU, or API subscription is needed for v0.
 ## Quick installation
 
 ```bash
-git clone https://github.com/YOUR-ORG/emily-assistant.git
+git clone https://github.com/AmirIqbal1/emily-assistant.git
 cd emily-assistant
 ./scripts/install.sh
 ```
