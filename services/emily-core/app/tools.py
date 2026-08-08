@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from typing import ClassVar
 
 from app.entities import EntityRegistry, EntityResolver
-from app.home_assistant import HomeAssistantClient, HomeAssistantError
+from app.home_assistant import HomeAssistantBackend, HomeAssistantError
 from app.models import HomeAssistantEntity, ToolResult
 
 
@@ -24,8 +24,8 @@ class EmilyTool(ABC):
 
 
 class HomeAssistantTool(EmilyTool):
-    def __init__(self, client: HomeAssistantClient) -> None:
-        self.client = client
+    def __init__(self, backend: HomeAssistantBackend) -> None:
+        self.backend = backend
 
     def can_handle(self, entity: HomeAssistantEntity) -> bool:
         return entity.domain in self.domains
@@ -36,14 +36,14 @@ class HomeAssistantTool(EmilyTool):
         payload: dict[str, str | int | float] = {"entity_id": entity.entity_id}
         if data:
             payload.update(data)
-        await self.client.call_service(entity.domain, service, payload)
-        return ToolResult(reply="", success=True, tool=self.name, target=entity.friendly_name)
+        await self.backend.call_service(entity.domain, service, payload)
+        return ToolResult(reply="", success=True, tool=self.name, target=entity.entity_id)
 
 
 class TurnOnTool(HomeAssistantTool):
     name = "turn_on"
     description = "Turn on supported lights, switches, fans, and media players."
-    domains = frozenset({"light", "switch", "fan", "media_player"})
+    domains = frozenset({"light", "switch", "fan"})
 
     async def execute(self, entity: HomeAssistantEntity, value: int | None = None) -> ToolResult:
         result = await self._service(entity, "turn_on")
@@ -53,7 +53,7 @@ class TurnOnTool(HomeAssistantTool):
 class TurnOffTool(HomeAssistantTool):
     name = "turn_off"
     description = "Turn off supported lights, switches, fans, and media players."
-    domains = frozenset({"light", "switch", "fan", "media_player"})
+    domains = frozenset({"light", "switch", "fan"})
 
     async def execute(self, entity: HomeAssistantEntity, value: int | None = None) -> ToolResult:
         result = await self._service(entity, "turn_off")
@@ -63,7 +63,7 @@ class TurnOffTool(HomeAssistantTool):
 class ToggleTool(HomeAssistantTool):
     name = "toggle"
     description = "Toggle supported lights, switches, fans, and media players."
-    domains = frozenset({"light", "switch", "fan", "media_player"})
+    domains = frozenset({"light", "switch", "fan"})
 
     async def execute(self, entity: HomeAssistantEntity, value: int | None = None) -> ToolResult:
         result = await self._service(entity, "toggle")
@@ -125,7 +125,7 @@ class GetStateTool(HomeAssistantTool):
 
     async def execute(self, entity: HomeAssistantEntity, value: int | None = None) -> ToolResult:
         return ToolResult(
-            reply=self._describe(entity), success=True, tool=self.name, target=entity.friendly_name
+            reply=self._describe(entity), success=True, tool=self.name, target=entity.entity_id
         )
 
     @staticmethod
@@ -150,7 +150,7 @@ class ToolExecutor:
         self.registry = registry
         self.resolver = resolver
         self.control_enabled = control_enabled
-        client = registry.client
+        client = registry.backend
         tool_classes = (
             TurnOnTool, TurnOffTool, ToggleTool, SetBrightnessTool, SetVolumeTool,
             MediaPlayTool, MediaPauseTool, GetStateTool,
@@ -163,7 +163,7 @@ class ToolExecutor:
             return ToolResult(reply="I need a device name for that command.", success=False, tool=tool_name)
         if tool.changes_device and not self.control_enabled:
             return ToolResult(
-                reply="Home Assistant device control is disabled.", success=False, tool=tool.name
+                reply="Home Assistant control is disabled. I can still check device states.", success=False, tool=tool.name
             )
         try:
             resolution = self.resolver.resolve(
@@ -185,10 +185,13 @@ class ToolExecutor:
                 tool=tool.name,
             )
         try:
-            return await tool.execute(resolution.entity, value)
+            result = await tool.execute(resolution.entity, value)
+            if result.success and tool.changes_device:
+                self.registry.invalidate()
+            return result
         except HomeAssistantError as error:
             return ToolResult(
-                reply=error.message, success=False, tool=tool.name, target=resolution.entity.friendly_name
+                reply=error.message, success=False, tool=tool.name, target=resolution.entity.entity_id
             )
 
 

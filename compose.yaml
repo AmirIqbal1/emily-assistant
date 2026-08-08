@@ -10,6 +10,7 @@ services:
       EMILY_LOG_LEVEL: ${EMILY_LOG_LEVEL:-INFO}
       HOME_ASSISTANT_URL: ${HOME_ASSISTANT_URL:-http://host.docker.internal:8123}
       HOME_ASSISTANT_TOKEN: ${HOME_ASSISTANT_TOKEN:-}
+      HOME_ASSISTANT_MOCK: ${HOME_ASSISTANT_MOCK:-false}
       ENTITY_CACHE_SECONDS: ${ENTITY_CACHE_SECONDS:-30}
       HOME_ASSISTANT_CONTROL_ENABLED: ${HOME_ASSISTANT_CONTROL_ENABLED:-true}
     ports:
@@ -35,6 +36,8 @@ services:
 
   homeassistant:
     image: ${HOME_ASSISTANT_IMAGE:-ghcr.io/home-assistant/home-assistant:stable}
+    profiles:
+      - homeassistant
     # Host networking is required for reliable local device discovery (mDNS/SSDP)
     # and lets Home Assistant communicate directly with trusted LAN devices.
     network_mode: host

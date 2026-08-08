@@ -21,6 +21,9 @@ class Settings(BaseSettings):
         validation_alias="HOME_ASSISTANT_URL",
     )
     home_assistant_token: str = Field(default="", validation_alias="HOME_ASSISTANT_TOKEN")
+    home_assistant_mock: bool = Field(
+        default=False, validation_alias="HOME_ASSISTANT_MOCK"
+    )
     entity_cache_seconds: int = Field(
         default=30, ge=0, le=3_600, validation_alias="ENTITY_CACHE_SECONDS"
     )

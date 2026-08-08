@@ -9,6 +9,7 @@ EMILY_PORT=8787
 HOME_ASSISTANT_URL=http://127.0.0.1:8123
 HOME_ASSISTANT_CONFIGURED=no
 HOME_ASSISTANT_TOKEN_CONFIGURED=no
+HOME_ASSISTANT_MOCK=no
 HOME_ASSISTANT_CONTROL_ENABLED=true
 if [[ -f .env ]]; then
   configured_port=$(awk -F= '$1 == "EMILY_PORT" {print $2; exit}' .env)
@@ -18,6 +19,8 @@ if [[ -f .env ]]; then
   [[ -n $configured_ha_url ]] && HOME_ASSISTANT_CONFIGURED=yes
   configured_ha_token=$(awk -F= '$1 == "HOME_ASSISTANT_TOKEN" {print substr($0, index($0, "=") + 1); exit}' .env)
   [[ -n $configured_ha_token ]] && HOME_ASSISTANT_TOKEN_CONFIGURED=yes
+  configured_ha_mock=$(awk -F= '$1 == "HOME_ASSISTANT_MOCK" {print substr($0, index($0, "=") + 1); exit}' .env)
+  [[ ${configured_ha_mock,,} == true ]] && HOME_ASSISTANT_MOCK=yes
   configured_control=$(awk -F= '$1 == "HOME_ASSISTANT_CONTROL_ENABLED" {print substr($0, index($0, "=") + 1); exit}' .env)
   HOME_ASSISTANT_CONTROL_ENABLED=${configured_control:-true}
 fi
@@ -52,15 +55,20 @@ if [[ $ha_http_code == 000 || -z $ha_http_code ]]; then echo "unavailable"; else
 
 echo
 echo "Home Assistant integration:"
+echo "Home Assistant mock mode:        $HOME_ASSISTANT_MOCK"
 echo "Home Assistant URL configured:   $HOME_ASSISTANT_CONFIGURED"
 echo "Home Assistant token configured: $HOME_ASSISTANT_TOKEN_CONFIGURED"
-if [[ $ha_http_code == 000 || -z $ha_http_code ]]; then
+if [[ $HOME_ASSISTANT_MOCK == yes ]]; then
+  echo "Home Assistant reachable:        mock"
+elif [[ $ha_http_code == 000 || -z $ha_http_code ]]; then
   echo "Home Assistant reachable:        no"
 else
   echo "Home Assistant reachable:        yes"
 fi
 core_status=$(curl --silent --max-time 5 "http://127.0.0.1:${EMILY_PORT}/api/status" 2>/dev/null || true)
-if [[ $core_status == *'"connected":true'* ]]; then
+if [[ $core_status == *'"mode":"mock"'* ]]; then
+  echo "Home Assistant authenticated:     mock"
+elif [[ $core_status == *'"connected":true'* ]]; then
   echo "Home Assistant authenticated:     yes"
 elif [[ -n $core_status ]]; then
   echo "Home Assistant authenticated:     no"

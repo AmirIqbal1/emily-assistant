@@ -46,7 +46,7 @@ fi
 echo "Building Emily Core..."
 docker compose build emily-core
 
-echo "Starting Emily Core and Home Assistant..."
+echo "Starting Emily Core..."
 docker compose up -d
 
 EMILY_PORT=$(awk -F= '$1 == "EMILY_PORT" {print $2; exit}' .env)
@@ -78,6 +78,5 @@ SERVER_IP=$(hostname -I 2>/dev/null | awk '{print $1}')
 SERVER_IP=${SERVER_IP:-SERVER-IP}
 echo
 echo "Emily Core is ready: http://${SERVER_IP}:${EMILY_PORT}"
-echo "Home Assistant:       http://${SERVER_IP}:8123"
-echo "Home Assistant can take several minutes to initialize on its first start."
+echo "Home Assistant is optional. Start it later with: make homeassistant-start"
 echo "Enable Music Assistant later with: docker compose --profile music up -d"

@@ -183,7 +183,7 @@ def test_lock_is_not_controllable_and_control_can_be_disabled() -> None:
     disabled_calls: list[httpx.Request] = []
     with make_chat_client(disabled_calls, home_assistant_control_enabled=False) as client:
         disabled_response = client.post("/api/chat", json={"message": "turn on kitchen light"})
-    assert disabled_response.json()["reply"] == "Home Assistant device control is disabled."
+    assert disabled_response.json()["reply"] == "Home Assistant control is disabled. I can still check device states."
     assert not any("/api/services/" in request.url.path for request in disabled_calls)
 
 

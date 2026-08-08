@@ -33,5 +33,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Validate Compose configuration
         run: docker compose --env-file .env.example --profile music config
+      - name: Validate development Compose configuration
+        run: docker compose --env-file .env.example -f compose.yaml -f compose.dev.yaml config
       - name: Build Emily Core image
         run: docker build --tag emily-core:ci services/emily-core

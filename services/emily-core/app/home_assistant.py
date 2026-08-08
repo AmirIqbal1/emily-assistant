@@ -1,4 +1,5 @@
 import logging
+from abc import ABC, abstractmethod
 from typing import Any
 
 import httpx
@@ -17,7 +18,36 @@ class HomeAssistantError(Exception):
         self.status_code = status_code
 
 
-class HomeAssistantClient:
+class HomeAssistantBackend(ABC):
+    """Small backend contract shared by real and development mock Home Assistant."""
+
+    is_mock = False
+
+    @property
+    @abstractmethod
+    def token_configured(self) -> bool:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def check_connection(self) -> HomeAssistantStatus:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def get_states(self) -> list[dict[str, Any]]:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def get_state(self, entity_id: str) -> dict[str, Any]:
+        raise NotImplementedError
+
+    @abstractmethod
+    async def call_service(
+        self, domain: str, service: str, service_data: dict[str, Any]
+    ) -> None:
+        raise NotImplementedError
+
+
+class HomeAssistantClient(HomeAssistantBackend):
     """Server-side, allow-listed Home Assistant REST client.
 
     The long-lived token remains private to this object.  Callers get only
@@ -129,3 +159,7 @@ class HomeAssistantClient:
         if not isinstance(data, dict):
             raise HomeAssistantError("Home Assistant returned malformed data.")
         return data
+
+
+class RealHomeAssistantBackend(HomeAssistantClient):
+    """Named production backend; retains the existing client implementation."""

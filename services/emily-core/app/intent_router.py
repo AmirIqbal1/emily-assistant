@@ -26,9 +26,16 @@ class LocalIntentRouter(IntentDetector):
         normalized = self._normalize(message)
 
         # Device commands precede conversational v0.1 messages.
-        volume = re.fullmatch(r"set (?:the )?(.+?) volume to (-?\d+)(?: percent)?", normalized)
+        volume = re.fullmatch(
+            r"(?:set (?:the )?(.+?) volume to|volume (?:the )?(.+?) to) (-?\d+)(?: percent)?",
+            normalized,
+        )
         if volume:
-            return IntentResult(intent="media.set_volume", target_name=volume.group(1), value=int(volume.group(2)))
+            return IntentResult(
+                intent="media.set_volume",
+                target_name=volume.group(1) or volume.group(2),
+                value=int(volume.group(3)),
+            )
 
         brightness = re.fullmatch(
             r"(?:set|dim) (?:the )?(.+?)(?: brightness)? to (-?\d+)(?: percent)?", normalized
@@ -38,13 +45,16 @@ class LocalIntentRouter(IntentDetector):
                 intent="light.set_brightness", target_name=brightness.group(1), value=int(brightness.group(2))
             )
 
-        match = re.fullmatch(r"(?:turn on|switch) (?:the )?(.+?)(?: on)?", normalized)
+        match = re.fullmatch(r"(?:turn on|switch on|switch) (?:the )?(.+?)(?: on)?", normalized)
         if match:
             return IntentResult(intent="device.turn_on", target_name=match.group(1))
         match = re.fullmatch(r"turn (?:the )?(.+?) on", normalized)
         if match:
             return IntentResult(intent="device.turn_on", target_name=match.group(1))
         match = re.fullmatch(r"(?:turn off|switch off) (?:the )?(.+?)(?: off)?", normalized)
+        if match:
+            return IntentResult(intent="device.turn_off", target_name=match.group(1))
+        match = re.fullmatch(r"turn (?:the )?(.+?) off", normalized)
         if match:
             return IntentResult(intent="device.turn_off", target_name=match.group(1))
         match = re.fullmatch(r"toggle (?:the )?(.+)", normalized)
@@ -65,6 +75,9 @@ class LocalIntentRouter(IntentDetector):
         match = re.fullmatch(r"what is (?:the )?(.+?)(?: set to| reading)?", normalized)
         if match and match.group(1) not in {"your name", "the time"}:
             return IntentResult(intent="device.get_state", target_name=match.group(1))
+        match = re.fullmatch(r"(?:lock|unlock) (?:the )?(.+)", normalized)
+        if match:
+            return IntentResult(intent="device.lock_control_blocked", target_name=match.group(1))
 
         if normalized in {"hi", "hello", "hey", "hello emily", "hey emily", "hi emily"}:
             return IntentResult(intent="greeting")

@@ -15,9 +15,10 @@ from app import __version__
 from app.assistant import Assistant
 from app.config import Settings, get_settings
 from app.entities import EntityRegistry, EntityResolver, SUPPORTED_DOMAINS
-from app.home_assistant import HomeAssistantClient, HomeAssistantError
+from app.home_assistant import HomeAssistantBackend, HomeAssistantError, RealHomeAssistantBackend
 from app.intent_router import LocalIntentRouter
 from app.models import ChatRequest, ChatResponse, EntityListResponse, HomeAssistantEntity, StatusResponse
+from app.mock_home_assistant import MockHomeAssistantBackend
 from app.providers.local import LocalProvider
 from app.tools import ToolExecutor
 
@@ -77,12 +78,14 @@ def configure_logging(level: str) -> None:
 
 
 def create_app(
-    settings: Settings | None = None, home_assistant: HomeAssistantClient | None = None
+    settings: Settings | None = None, home_assistant: HomeAssistantBackend | None = None
 ) -> FastAPI:
     settings = settings or get_settings()
     configure_logging(settings.emily_log_level)
-    home_assistant = home_assistant or HomeAssistantClient(
-        settings.home_assistant_url, settings.home_assistant_token
+    home_assistant = home_assistant or (
+        MockHomeAssistantBackend()
+        if settings.home_assistant_mock
+        else RealHomeAssistantBackend(settings.home_assistant_url, settings.home_assistant_token)
     )
     entity_registry = EntityRegistry(home_assistant, settings.entity_cache_seconds)
     tools = ToolExecutor(entity_registry, EntityResolver(), settings.home_assistant_control_enabled)
@@ -144,6 +147,9 @@ def create_app(
             name=settings.emily_name,
             home_assistant=ha_status,
             home_assistant_token_configured=home_assistant.token_configured,
+            home_assistant_mock=home_assistant.is_mock,
+            home_assistant_control_enabled=settings.home_assistant_control_enabled,
+            entity_count=entity_registry.cached_count or getattr(home_assistant, "entity_count", 0),
             uptime_seconds=round(time.monotonic() - started_at, 3),
             server_time=datetime.now(timezone.utc).isoformat(),
             enabled_providers=assistant.enabled_provider_names,

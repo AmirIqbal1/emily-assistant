@@ -10,6 +10,7 @@ const statusDot = document.querySelector("#status-dot");
 const statusText = document.querySelector("#status-text");
 const refreshDevicesButton = document.querySelector("#refresh-devices");
 const devicesStatus = document.querySelector("#devices-status");
+const devicesMode = document.querySelector("#devices-mode");
 const entityCount = document.querySelector("#entity-count");
 const deviceSearch = document.querySelector("#device-search");
 const domainCounts = document.querySelector("#domain-counts");
@@ -101,9 +102,10 @@ async function refreshStatus() {
     const data = await response.json();
     statusDot.className = "status-dot online";
     statusText.textContent = data.home_assistant.connected
-      ? "Core + Home Assistant online"
+      ? data.home_assistant_mock ? "Core + Home Assistant mock" : "Core + Home Assistant online"
       : "Core online";
     refreshButton.title = data.home_assistant.message;
+    devicesMode.textContent = `Home Assistant: ${data.home_assistant_mock ? "Mock mode" : data.home_assistant.connected ? "Authenticated" : data.home_assistant.message} • Control: ${data.home_assistant_control_enabled ? "enabled" : "disabled"}`;
   } catch (_error) {
     statusDot.className = "status-dot offline";
     statusText.textContent = "Core unavailable";

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from app.home_assistant import HomeAssistantClient
+from app.home_assistant import HomeAssistantBackend
 from app.intent_router import IntentDetector
 from app.models import ChatResponse, ProviderContext
 from app.providers.base import AssistantProvider
@@ -12,7 +12,7 @@ class LocalProvider(AssistantProvider):
         self,
         assistant_name: str,
         router: IntentDetector,
-        home_assistant: HomeAssistantClient,
+        home_assistant: HomeAssistantBackend,
         tools: ToolExecutor,
     ) -> None:
         self.assistant_name = assistant_name
@@ -51,6 +51,14 @@ class LocalProvider(AssistantProvider):
                 success=result.success,
                 tool=result.tool,
                 target=result.target,
+            )
+
+        if intent == "device.lock_control_blocked":
+            return ChatResponse(
+                reply="I don't currently permit security-sensitive lock control.",
+                intent=intent,
+                provider=self.name,
+                success=False,
             )
 
         if intent == "greeting":

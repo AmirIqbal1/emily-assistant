@@ -14,10 +14,13 @@ flowchart LR
     Browser[Browser on trusted LAN] -->|HTTP :8787| Core[Emily Core<br/>FastAPI]
     Core --> Router[Local intent router]
     Router --> Provider[Local provider]
-    Core --> Discovery[Entity discovery cache<br/>safe entity metadata]
-    Core --> Tools[Allow-listed HA tools]
-    Discovery -->|/api/states| HA[Home Assistant<br/>host network :8123]
-    Tools -->|fixed REST services| HA
+    Provider --> Tools[Tool registry<br/>allow-listed controls]
+    Tools --> Resolver[Entity resolver]
+    Resolver --> Discovery[Entity discovery cache<br/>safe entity metadata]
+    Tools --> Backend[HomeAssistantBackend]
+    Backend --> Real[Real HTTP backend]
+    Backend --> Mock[Mock in-memory backend]
+    Real --> HA[Optional Home Assistant<br/>host network :8123]
     MA[Music Assistant<br/>optional profile] -. future tools .-> Core
     Satellites[Raspberry Pi satellites] -. future voice transport .-> Core
     Runtime[(Local runtime data)] --- Core
@@ -47,7 +50,7 @@ cd emily-assistant
 
 The installer checks prerequisites, creates local runtime directories, copies `.env.example` to `.env` only when needed, builds Emily Core, starts the default stack, and waits for the health endpoint. It never installs Docker or overwrites an existing `.env`.
 
-Open `http://SERVER-IP:8787` for Emily and `http://SERVER-IP:8123` for Home Assistant. Home Assistant can take several minutes on its first start.
+Open `http://SERVER-IP:8787` for Emily. Home Assistant is optional; start a local instance later with `make homeassistant-start`.
 
 ## Manual installation
 
@@ -75,7 +78,7 @@ Edit `.env` to change the timezone, port, assistant name, log level, service ima
 
 Emily communicates with Home Assistant only from the server: it uses `/api/`, `/api/states`, `/api/states/{entity_id}`, and explicitly allow-listed service calls. The browser never receives the long-lived token, raw Home Assistant response bodies, or arbitrary attributes. A missing, invalid, or unreachable configuration fails cleanly without exposing the token.
 
-Home Assistant uses host networking so mDNS/SSDP discovery works reliably on the local network. Emily reaches it from its container through `host.docker.internal`. Home Assistant is not configured behind a public reverse proxy by this project.
+Home Assistant uses host networking so mDNS/SSDP discovery works reliably on the local network. It is an optional Compose profile: Emily Core starts and remains healthy with no Home Assistant, token, or internet connection. Emily reaches a real instance from its container through `host.docker.internal`; it is not configured behind a public reverse proxy by this project.
 
 ### Home Assistant devices and commands
 
@@ -96,6 +99,10 @@ Supported conversational commands include:
 Names are resolved deterministically from friendly names and entity-ID suffixes. Emily asks which device you mean when a match is ambiguous; it never guesses. Brightness and volume are clamped to 0–100% before conversion to Home Assistant values.
 
 Locks can be discovered and queried, but cannot be controlled in v0.2. Garage doors, alarms, security systems, scripts, shell commands, and generic service execution are intentionally blocked. These sensitive actions require a future confirmation and authorization framework.
+
+### Local mock mode
+
+For laptop development without Home Assistant, set `HOME_ASSISTANT_MOCK=true` in your untracked `.env`, or run `make mock`. Mock mode provides in-memory Kitchen Ceiling, Bedroom Lamp, Office Fan, Living Room TV, Office Temperature, and Front Door entities. State changes persist while Core runs, but are discarded on restart. The UI and status API clearly mark mock mode; no token or network connection is used. See [development notes](docs/development.md) for the full local workflow.
 
 ## Optional Music Assistant
 

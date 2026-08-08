@@ -4,7 +4,7 @@ from collections import Counter
 from dataclasses import dataclass
 from typing import Any
 
-from app.home_assistant import HomeAssistantClient, HomeAssistantError
+from app.home_assistant import HomeAssistantBackend, HomeAssistantError
 from app.models import HomeAssistantEntity
 
 SUPPORTED_DOMAINS = frozenset(
@@ -28,8 +28,8 @@ SAFE_ATTRIBUTE_KEYS = frozenset(
 class EntityRegistry:
     """Caches supported Home Assistant states and strips unsafe attributes."""
 
-    def __init__(self, client: HomeAssistantClient, cache_seconds: int = 30) -> None:
-        self.client = client
+    def __init__(self, backend: HomeAssistantBackend, cache_seconds: int = 30) -> None:
+        self.backend = backend
         self.cache_seconds = cache_seconds
         self._entities: list[HomeAssistantEntity] = []
         self._cached_at = 0.0
@@ -38,7 +38,7 @@ class EntityRegistry:
         if not refresh and self._entities and time.monotonic() - self._cached_at < self.cache_seconds:
             return self._entities
 
-        states = await self.client.get_states()
+        states = await self.backend.get_states()
         entities: list[HomeAssistantEntity] = []
         for raw_state in states:
             entity = self._to_entity(raw_state)
@@ -51,10 +51,18 @@ class EntityRegistry:
     async def find_by_id(self, entity_id: str) -> HomeAssistantEntity:
         if not re.fullmatch(r"[a-z_]+\.[a-z0-9_]+", entity_id):
             raise HomeAssistantError("Invalid Home Assistant entity ID.")
-        entity = self._to_entity(await self.client.get_state(entity_id))
+        entity = self._to_entity(await self.backend.get_state(entity_id))
         if not entity:
             raise HomeAssistantError("That Home Assistant entity is not supported.")
         return entity
+
+    def invalidate(self) -> None:
+        """Force the next discovery to observe a completed device-changing action."""
+        self._cached_at = 0.0
+
+    @property
+    def cached_count(self) -> int:
+        return len(self._entities)
 
     @staticmethod
     def counts(entities: list[HomeAssistantEntity]) -> dict[str, int]:

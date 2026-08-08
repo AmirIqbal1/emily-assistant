@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -32,6 +32,7 @@ class HomeAssistantStatus(BaseModel):
     configured: bool
     status_code: int | None = None
     message: str
+    mode: Literal["real", "mock"] = "real"
 
 
 SafeAttributeValue = str | int | float | bool | None
@@ -73,6 +74,9 @@ class StatusResponse(BaseModel):
     name: str
     home_assistant: HomeAssistantStatus
     home_assistant_token_configured: bool
+    home_assistant_mock: bool
+    home_assistant_control_enabled: bool
+    entity_count: int
     uptime_seconds: float
     server_time: str
     enabled_providers: list[str]
