@@ -1,11 +1,11 @@
 # Emily
 
-Emily is an open-source, local-first voice assistant intended to become a practical Siri or Alexa replacement. It runs on a home server and will eventually connect to small Linux and Raspberry Pi voice satellites. This repository currently contains **Emily Core v0.1**: the safe, headless infrastructure foundation, without microphone streaming or wake-word detection.
+Emily is an open-source, local-first voice assistant intended to become a practical Siri or Alexa replacement. It runs on a home server and will eventually connect to small Linux and Raspberry Pi voice satellites. This repository currently contains **Emily Core v0.2**: deterministic Home Assistant discovery and device control through the local web chat, without microphone streaming or wake-word detection.
 
-The current release provides a FastAPI core, a mobile-friendly local chat page, deterministic offline intents, read-only Home Assistant connectivity checks, optional Music Assistant infrastructure, Docker Compose lifecycle management, and backup/recovery tools. It uses no paid API and sends no analytics.
+The current release provides a FastAPI core, a mobile-friendly local chat page with a device browser, deterministic offline intents, safe Home Assistant tools, optional Music Assistant infrastructure, Docker Compose lifecycle management, and backup/recovery tools. It uses no paid API and sends no analytics.
 
 > [!WARNING]
-> Emily v0.1 has no authentication. Use it only on a trusted private LAN or through Tailscale. Never forward ports 8787 or 8123 through your router or expose them directly to the internet.
+> Emily v0.2 has no authentication. Use it only on a trusted private LAN or through Tailscale. Never forward ports 8787 or 8123 through your router or expose them directly to the internet.
 
 ## Architecture
 
@@ -14,7 +14,10 @@ flowchart LR
     Browser[Browser on trusted LAN] -->|HTTP :8787| Core[Emily Core<br/>FastAPI]
     Core --> Router[Local intent router]
     Router --> Provider[Local provider]
-    Core -->|Read-only API check| HA[Home Assistant<br/>host network :8123]
+    Core --> Discovery[Entity discovery cache<br/>safe entity metadata]
+    Core --> Tools[Allow-listed HA tools]
+    Discovery -->|/api/states| HA[Home Assistant<br/>host network :8123]
+    Tools -->|fixed REST services| HA
     MA[Music Assistant<br/>optional profile] -. future tools .-> Core
     Satellites[Raspberry Pi satellites] -. future voice transport .-> Core
     Runtime[(Local runtime data)] --- Core
@@ -32,7 +35,7 @@ flowchart LR
 - Git and either `curl` or `wget`
 - A user account allowed to run Docker
 
-No microphone, speaker, Raspberry Pi, GPU, or API subscription is needed for v0.1.
+No microphone, speaker, Raspberry Pi, GPU, or API subscription is needed for v0.2.
 
 ## Quick installation
 
@@ -70,9 +73,29 @@ Edit `.env` to change the timezone, port, assistant name, log level, service ima
 6. Apply it with `docker compose up -d --force-recreate emily-core`.
 7. Ask Emily “Is Home Assistant online?” or refresh the status in the web page.
 
-The v0.1 client only checks Home Assistant's `/api/` endpoint. It does not control devices. A missing, invalid, or unreachable configuration fails cleanly without exposing the token.
+Emily communicates with Home Assistant only from the server: it uses `/api/`, `/api/states`, `/api/states/{entity_id}`, and explicitly allow-listed service calls. The browser never receives the long-lived token, raw Home Assistant response bodies, or arbitrary attributes. A missing, invalid, or unreachable configuration fails cleanly without exposing the token.
 
 Home Assistant uses host networking so mDNS/SSDP discovery works reliably on the local network. Emily reaches it from its container through `host.docker.internal`. Home Assistant is not configured behind a public reverse proxy by this project.
+
+### Home Assistant devices and commands
+
+Emily discovers `light`, `switch`, `fan`, `media_player`, `climate`, `cover`, `lock`, `sensor`, and `binary_sensor` entities. Discovery is cached for 30 seconds by default and is shown in the web chat’s Devices section. Set `ENTITY_CACHE_SECONDS` to adjust that cache.
+
+Device-changing controls are enabled by default with `HOME_ASSISTANT_CONTROL_ENABLED=true`. Set it to `false` to retain discovery and state questions while disabling all device-changing requests.
+
+Supported conversational commands include:
+
+- `turn on the kitchen light`, `switch the kitchen light on`, `turn off the bedroom fan`
+- `toggle the hallway light`
+- `set kitchen light to 50 percent`, `dim kitchen light to 20 percent`
+- `set the living room TV volume to 30 percent`
+- `play the living room TV`, `pause the living room TV`
+- `is the kitchen light on?`, `what state is the office switch?`
+- `what is the temperature sensor reading?`, `what is the living room thermostat set to?`
+
+Names are resolved deterministically from friendly names and entity-ID suffixes. Emily asks which device you mean when a match is ambiguous; it never guesses. Brightness and volume are clamped to 0–100% before conversion to Home Assistant values.
+
+Locks can be discovered and queried, but cannot be controlled in v0.2. Garage doors, alarms, security systems, scripts, shell commands, and generic service execution are intentionally blocked. These sensitive actions require a future confirmation and authorization framework.
 
 ## Optional Music Assistant
 
@@ -124,6 +147,8 @@ Restore verifies the adjacent `.sha256` when present, rejects unsafe archive pat
 - If port 8787 or 8123 is already used, locate the process with `ss -ltnp`. Change `EMILY_PORT` for Core; Home Assistant requires port 8123 in this milestone.
 - If Home Assistant is starting for the first time, wait several minutes and inspect `docker compose logs homeassistant`.
 - If Home Assistant reports an invalid token, create a new long-lived token, update `.env`, and recreate `emily-core`.
+- If the Devices section cannot load, confirm `HOME_ASSISTANT_URL` is reachable from the Emily container and run `make doctor`.
+- If Emily cannot identify a device, use its displayed friendly name or rename the entity in Home Assistant. Similar names trigger a clarification instead of an action.
 - If a container cannot write its runtime directory, check ownership and permissions under `runtime/`; do not make credentials or backups world-readable.
 - Run `docker compose --env-file .env.example --profile music config` to inspect the fully rendered stack without revealing a real token.
 
@@ -150,16 +175,13 @@ The `AssistantProvider` interface isolates message processing. A future `OllamaP
 
 ## Roadmap
 
-1. Core infrastructure
-2. Home Assistant tools
-3. Music Assistant control
-4. Ollama integration
-5. Speech-to-text
-6. Piper text-to-speech
-7. “Hey Emily” wake word
-8. Linux/Raspberry Pi satellites
-9. Car mode
-10. Mobile companion features
+1. v0.1 Core infrastructure — complete
+2. v0.2 Home Assistant tools — complete
+3. v0.3 Music Assistant + Spotify — next
+4. v0.4 Ollama conversational provider
+5. v0.5 Speech-to-text and text-to-speech
+6. v0.6 Wake word
+7. v0.7 Raspberry Pi/Linux satellites
 
 ## Contributing
 

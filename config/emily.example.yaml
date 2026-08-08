@@ -1,5 +1,5 @@
 # Reserved for future tool and provider configuration. Environment variables are
-# the supported configuration source in Emily Core v0.1.
+# the supported configuration source in Emily Core v0.2.
 assistant:
   name: Emily
 providers:
@@ -8,4 +8,3 @@ providers:
   # ollama:
   #   enabled: false
   #   base_url: http://host.docker.internal:11434
-

@@ -23,6 +23,8 @@ class ChatResponse(BaseModel):
     intent: str
     provider: str
     success: bool
+    tool: str | None = None
+    target: str | None = None
 
 
 class HomeAssistantStatus(BaseModel):
@@ -30,6 +32,40 @@ class HomeAssistantStatus(BaseModel):
     configured: bool
     status_code: int | None = None
     message: str
+
+
+SafeAttributeValue = str | int | float | bool | None
+
+
+class HomeAssistantEntity(BaseModel):
+    """A deliberately small, browser-safe representation of an HA state."""
+
+    entity_id: str
+    domain: str
+    friendly_name: str
+    state: str
+    attributes: dict[str, SafeAttributeValue] = Field(default_factory=dict)
+    area: str | None = None
+    device_class: str | None = None
+
+
+class EntityListResponse(BaseModel):
+    entities: list[HomeAssistantEntity]
+    count: int
+    supported_counts: dict[str, int]
+
+
+class IntentResult(BaseModel):
+    intent: str
+    target_name: str | None = None
+    value: int | None = None
+
+
+class ToolResult(BaseModel):
+    reply: str
+    success: bool
+    tool: str
+    target: str | None = None
 
 
 class StatusResponse(BaseModel):
@@ -44,4 +80,3 @@ class StatusResponse(BaseModel):
 
 class ProviderContext(BaseModel):
     data: dict[str, Any] = Field(default_factory=dict)
-

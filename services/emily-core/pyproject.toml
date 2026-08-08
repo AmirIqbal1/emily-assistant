@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "emily-core"
-version = "0.1.0"
+version = "0.2.0"
 description = "The local-first core service for the Emily voice assistant"
 requires-python = ">=3.12"
 dependencies = [
@@ -24,7 +24,6 @@ dev = [
 packages = ["app"]
 
 [tool.pytest.ini_options]
-addopts = "-q"
+addopts = "-q -p no:cacheprovider"
 asyncio_mode = "auto"
 testpaths = ["tests"]
-

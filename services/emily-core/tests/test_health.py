@@ -12,7 +12,7 @@ def test_health_endpoint() -> None:
     assert response.json() == {
         "status": "healthy",
         "service": "emily-core",
-        "version": "0.1.0",
+        "version": "0.2.0",
     }
 
 
@@ -22,4 +22,3 @@ def test_security_headers_are_set() -> None:
 
     assert response.headers["x-content-type-options"] == "nosniff"
     assert response.headers["x-frame-options"] == "DENY"
-

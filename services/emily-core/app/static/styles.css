@@ -31,7 +31,7 @@ button:disabled { cursor: wait; opacity: 0.55; }
   min-height: calc(100vh - 48px);
   margin: 24px auto;
   display: grid;
-  grid-template-rows: auto minmax(280px, 1fr) auto auto auto;
+  grid-template-rows: auto minmax(240px, 1fr) auto auto auto auto;
   overflow: hidden;
   background: color-mix(in srgb, var(--panel) 94%, transparent);
   border: 1px solid var(--border);
@@ -99,6 +99,20 @@ h1 { margin: 0; font-size: 1.9rem; letter-spacing: -0.04em; }
 .message.user .message-label { text-align: right; margin-right: 4px; }
 .message p { margin: 0; padding: 12px 15px; line-height: 1.5; background: var(--panel-light); border: 1px solid var(--border); border-radius: 15px 15px 15px 4px; }
 .message.user p { color: #081411; background: var(--accent); border-color: var(--accent); border-radius: 15px 15px 4px 15px; }
+.tool-indicator { display: block; margin: 6px 4px 0; color: var(--accent); font-size: 0.72rem; }
+
+.devices { padding: 20px 26px; border-top: 1px solid var(--border); }
+.devices-heading { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+h2 { margin: 0; font-size: 1.05rem; }
+h2 span { color: var(--muted); font-weight: 400; }
+.secondary-button { padding: 8px 12px; color: var(--text); background: var(--panel-light); border: 1px solid var(--border); border-radius: 9px; }
+.devices-status { margin: 12px 0; color: var(--muted); font-size: 0.84rem; }
+.devices input { width: 100%; padding: 10px 12px; color: var(--text); background: #0e1118; border: 1px solid var(--border); border-radius: 9px; outline: none; }
+.domain-counts { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; }
+.domain-counts span { padding: 4px 7px; color: var(--muted); background: var(--panel-light); border-radius: 999px; font-size: 0.72rem; }
+.device-list { max-height: 200px; margin: 0; padding: 0; overflow-y: auto; list-style: none; border-top: 1px solid var(--border); }
+.device-list li { display: grid; gap: 3px; padding: 10px 2px; border-bottom: 1px solid var(--border); }
+.device-list span { overflow: hidden; color: var(--muted); font-size: 0.76rem; text-overflow: ellipsis; white-space: nowrap; }
 
 .error, .loading { margin: 0 26px 10px; font-size: 0.84rem; }
 .error { color: var(--danger); }
@@ -119,9 +133,9 @@ footer { display: flex; justify-content: space-between; gap: 16px; padding: 0 22
   .shell { width: 100%; min-height: 100vh; margin: 0; border: 0; border-radius: 0; }
   .topbar { padding: 20px 18px; }
   .messages { padding: 22px 18px; }
+  .devices { padding: 18px; }
   .message { max-width: 90%; }
   .status-button { max-width: 48%; }
   .status-button span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   footer span { display: none; }
 }
-

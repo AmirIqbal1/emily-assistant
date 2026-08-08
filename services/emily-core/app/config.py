@@ -21,6 +21,12 @@ class Settings(BaseSettings):
         validation_alias="HOME_ASSISTANT_URL",
     )
     home_assistant_token: str = Field(default="", validation_alias="HOME_ASSISTANT_TOKEN")
+    entity_cache_seconds: int = Field(
+        default=30, ge=0, le=3_600, validation_alias="ENTITY_CACHE_SECONDS"
+    )
+    home_assistant_control_enabled: bool = Field(
+        default=True, validation_alias="HOME_ASSISTANT_CONTROL_ENABLED"
+    )
     cors_origins: str = Field(default="", validation_alias="EMILY_CORS_ORIGINS")
     max_request_bytes: int = Field(
         default=16_384,

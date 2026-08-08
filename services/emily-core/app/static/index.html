@@ -12,7 +12,7 @@
     <main class="shell">
       <header class="topbar">
         <div>
-          <div class="eyebrow">Core v0.1</div>
+          <div class="eyebrow">Core v0.2</div>
           <h1>Emily</h1>
         </div>
         <button id="refresh-status" class="status-button" type="button" aria-label="Refresh system status">
@@ -26,6 +26,20 @@
           <span class="message-label">Emily</span>
           <p>Hello. I’m Emily. Emily Core is ready.</p>
         </article>
+      </section>
+
+      <section class="devices" aria-labelledby="devices-heading">
+        <div class="devices-heading">
+          <div>
+            <div class="eyebrow">Home Assistant</div>
+            <h2 id="devices-heading">Devices <span id="entity-count">—</span></h2>
+          </div>
+          <button id="refresh-devices" class="secondary-button" type="button">Refresh</button>
+        </div>
+        <p id="devices-status" class="devices-status">Loading device list…</p>
+        <input id="device-search" type="search" maxlength="100" placeholder="Search devices" aria-label="Search devices">
+        <div id="domain-counts" class="domain-counts" aria-label="Supported device counts"></div>
+        <ul id="device-list" class="device-list" aria-live="polite"></ul>
       </section>
 
       <p id="error" class="error" role="alert" hidden></p>
@@ -52,4 +66,3 @@
     </main>
   </body>
 </html>
-
