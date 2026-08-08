@@ -60,6 +60,8 @@ class IntentResult(BaseModel):
     intent: str
     target_name: str | None = None
     value: int | None = None
+    player_name: str | None = None
+    media_type: Literal["track", "artist", "album", "playlist"] | None = None
 
 
 class ToolResult(BaseModel):
@@ -80,6 +82,50 @@ class StatusResponse(BaseModel):
     uptime_seconds: float
     server_time: str
     enabled_providers: list[str]
+    music_assistant: "MusicAssistantStatus"
+    music_assistant_control_enabled: bool
+    music_player_count: int
+    music_default_player: str | None = None
+
+
+class MusicAssistantStatus(BaseModel):
+    connected: bool
+    configured: bool
+    message: str
+    mode: Literal["real", "mock"] = "real"
+
+
+class MusicPlayer(BaseModel):
+    player_id: str
+    name: str
+    available: bool
+    powered: bool = True
+    state: str
+    volume_percent: int
+    current_item: str | None = None
+    current_artist: str | None = None
+
+
+class MusicItem(BaseModel):
+    item_id: str
+    name: str
+    media_type: Literal["track", "artist", "album", "playlist"]
+    artist: str | None = None
+    album: str | None = None
+    provider: str = "mock"
+    uri: str | None = None
+
+
+class MusicPlayersResponse(BaseModel):
+    players: list[MusicPlayer]
+    count: int
+
+
+class MusicNowPlayingResponse(BaseModel):
+    player: MusicPlayer | None = None
+
+
+StatusResponse.model_rebuild()
 
 
 class ProviderContext(BaseModel):

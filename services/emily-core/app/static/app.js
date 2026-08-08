@@ -15,6 +15,11 @@ const entityCount = document.querySelector("#entity-count");
 const deviceSearch = document.querySelector("#device-search");
 const domainCounts = document.querySelector("#domain-counts");
 const deviceList = document.querySelector("#device-list");
+const refreshMusicButton = document.querySelector("#refresh-music");
+const musicStatus = document.querySelector("#music-status");
+const musicMode = document.querySelector("#music-mode");
+const musicCount = document.querySelector("#music-count");
+const musicList = document.querySelector("#music-list");
 let entitySearchTimer;
 
 function showError(message) {
@@ -42,11 +47,43 @@ function addMessage(author, text, tool) {
   if (tool) {
     const indicator = document.createElement("small");
     indicator.className = "tool-indicator";
-    indicator.textContent = `Home Assistant • ${tool}`;
+    indicator.textContent = `${tool.startsWith("music_") || tool === "play_music" || tool === "list_music_players" ? "Music Assistant" : "Home Assistant"} • ${tool}`;
     article.append(indicator);
   }
   messages.append(article);
   messages.scrollTop = messages.scrollHeight;
+}
+
+async function loadMusic() {
+  refreshMusicButton.disabled = true;
+  musicStatus.textContent = "Loading Music Assistant status…";
+  try {
+    const [statusResponse, playersResponse, coreResponse] = await Promise.all([
+      fetch("/api/music/status", {headers: {Accept: "application/json"}}),
+      fetch("/api/music/players", {headers: {Accept: "application/json"}}),
+      fetch("/api/status", {headers: {Accept: "application/json"}}),
+    ]);
+    const status = await statusResponse.json();
+    const playerData = playersResponse.ok ? await playersResponse.json() : {players: []};
+    const core = coreResponse.ok ? await coreResponse.json() : {};
+    musicCount.textContent = `(${playerData.count || 0})`;
+    musicStatus.textContent = status.connected ? status.message : status.message || "Music Assistant is unavailable.";
+    musicMode.textContent = `Mode: ${status.mode === "mock" ? "Mock" : status.configured ? "Authenticated" : "Not configured"} • Control: ${core.music_assistant_control_enabled ? "enabled" : "disabled"}${core.music_default_player ? ` • Default: ${core.music_default_player}` : ""}`;
+    musicList.replaceChildren();
+    playerData.players.forEach((player) => {
+      const item = document.createElement("li");
+      const name = document.createElement("strong");
+      name.textContent = player.name;
+      const detail = document.createElement("span");
+      detail.textContent = `${player.available ? player.state : "unavailable"} • ${player.volume_percent}%${player.current_item ? ` • ${player.current_item}${player.current_artist ? ` — ${player.current_artist}` : ""}` : ""}`;
+      item.append(name, detail);
+      musicList.append(item);
+    });
+  } catch (_error) {
+    musicStatus.textContent = "Music Assistant status is unavailable.";
+  } finally {
+    refreshMusicButton.disabled = false;
+  }
 }
 
 function renderDevices(data) {
@@ -135,7 +172,7 @@ form.addEventListener("submit", async (event) => {
       throw new Error(response.status === 422 ? "Please enter a shorter, valid message." : "Emily could not process that message.");
     }
     addMessage("Emily", data.reply, data.tool);
-    if (data.tool) loadDevices();
+    if (data.tool) { loadDevices(); loadMusic(); }
   } catch (error) {
     showError(error.message || "Could not reach Emily Core. Check the server connection and try again.");
   } finally {
@@ -154,9 +191,11 @@ clearButton.addEventListener("click", () => {
 
 refreshButton.addEventListener("click", refreshStatus);
 refreshDevicesButton.addEventListener("click", () => loadDevices(true));
+refreshMusicButton.addEventListener("click", loadMusic);
 deviceSearch.addEventListener("input", () => {
   clearTimeout(entitySearchTimer);
   entitySearchTimer = setTimeout(() => loadDevices(), 250);
 });
 refreshStatus();
 loadDevices();
+loadMusic();

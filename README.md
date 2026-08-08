@@ -1,6 +1,6 @@
 # Emily
 
-Emily is an open-source, local-first voice assistant intended to become a practical Siri or Alexa replacement. It runs on a home server and will eventually connect to small Linux and Raspberry Pi voice satellites. This repository currently contains **Emily Core v0.2**: deterministic Home Assistant discovery and device control through the local web chat, without microphone streaming or wake-word detection.
+Emily is an open-source, local-first voice assistant intended to become a practical Siri or Alexa replacement. It runs on a home server and will eventually connect to small Linux and Raspberry Pi voice satellites. This repository currently contains **Emily Core v0.3**: deterministic Home Assistant discovery and device control plus safe Music Assistant music playback through the local web chat, without microphone streaming or wake-word detection.
 
 The current release provides a FastAPI core, a mobile-friendly local chat page with a device browser, deterministic offline intents, safe Home Assistant tools, optional Music Assistant infrastructure, Docker Compose lifecycle management, and backup/recovery tools. It uses no paid API and sends no analytics.
 
@@ -21,7 +21,7 @@ flowchart LR
     Backend --> Real[Real HTTP backend]
     Backend --> Mock[Mock in-memory backend]
     Real --> HA[Optional Home Assistant<br/>host network :8123]
-    MA[Music Assistant<br/>optional profile] -. future tools .-> Core
+    MA[Music Assistant<br/>optional profile] --> Core
     Satellites[Raspberry Pi satellites] -. future voice transport .-> Core
     Runtime[(Local runtime data)] --- Core
     Runtime --- HA
@@ -112,7 +112,9 @@ Music Assistant is included behind a Compose profile and does not start by defau
 docker compose --profile music up -d
 ```
 
-Stop only Music Assistant with `make music-stop`. Its data is stored in `runtime/music-assistant`. Emily does not yet send commands to Music Assistant.
+Stop only Music Assistant with `make music-stop`; use `make music-logs` to follow its logs. Its data is stored in `runtime/music-assistant`. Configure a Music Assistant long-lived token and optional default player in `.env`, then use commands such as `play Wonderwall on living room speaker`, `pause the music`, and `what song is playing?`. Emily only speaks to Music Assistant, never directly to Spotify. See [Music Assistant setup](docs/music-assistant.md). For a fully offline laptop workflow use `make mock-all`.
+
+Music commands include `play Oasis`, `play Wonderwall in the living room`, `play my Driving playlist`, `pause the music`, `resume the music`, `skip this song`, `go back a song`, `set music volume to 30 percent`, `what song is playing?`, and `what music players are available?`.
 
 ## Operations
 
@@ -184,7 +186,7 @@ The `AssistantProvider` interface isolates message processing. A future `OllamaP
 
 1. v0.1 Core infrastructure — complete
 2. v0.2 Home Assistant tools — complete
-3. v0.3 Music Assistant + Spotify — next
+3. v0.3 Music Assistant playback — complete
 4. v0.4 Ollama conversational provider
 5. v0.5 Speech-to-text and text-to-speech
 6. v0.6 Wake word

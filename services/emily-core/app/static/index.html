@@ -12,7 +12,7 @@
     <main class="shell">
       <header class="topbar">
         <div>
-          <div class="eyebrow">Core v0.2</div>
+          <div class="eyebrow">Core v0.3</div>
           <h1>Emily</h1>
         </div>
         <button id="refresh-status" class="status-button" type="button" aria-label="Refresh system status">
@@ -26,6 +26,19 @@
           <span class="message-label">Emily</span>
           <p>Hello. I’m Emily. Emily Core is ready.</p>
         </article>
+      </section>
+
+      <section class="devices" aria-labelledby="music-heading">
+        <div class="devices-heading">
+          <div>
+            <div class="eyebrow">Music Assistant</div>
+            <h2 id="music-heading">Music <span id="music-count">—</span></h2>
+          </div>
+          <button id="refresh-music" class="secondary-button" type="button">Refresh</button>
+        </div>
+        <p id="music-status" class="devices-status">Loading Music Assistant status…</p>
+        <p id="music-mode" class="devices-status"></p>
+        <ul id="music-list" class="device-list" aria-live="polite"></ul>
       </section>
 
       <section class="devices" aria-labelledby="devices-heading">

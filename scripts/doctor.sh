@@ -11,6 +11,10 @@ HOME_ASSISTANT_CONFIGURED=no
 HOME_ASSISTANT_TOKEN_CONFIGURED=no
 HOME_ASSISTANT_MOCK=no
 HOME_ASSISTANT_CONTROL_ENABLED=true
+MUSIC_ASSISTANT_URL=http://127.0.0.1:8095
+MUSIC_ASSISTANT_TOKEN_CONFIGURED=no
+MUSIC_ASSISTANT_MOCK=no
+MUSIC_ASSISTANT_CONTROL_ENABLED=true
 if [[ -f .env ]]; then
   configured_port=$(awk -F= '$1 == "EMILY_PORT" {print $2; exit}' .env)
   EMILY_PORT=${configured_port:-8787}
@@ -23,6 +27,14 @@ if [[ -f .env ]]; then
   [[ ${configured_ha_mock,,} == true ]] && HOME_ASSISTANT_MOCK=yes
   configured_control=$(awk -F= '$1 == "HOME_ASSISTANT_CONTROL_ENABLED" {print substr($0, index($0, "=") + 1); exit}' .env)
   HOME_ASSISTANT_CONTROL_ENABLED=${configured_control:-true}
+  configured_ma_url=$(awk -F= '$1 == "MUSIC_ASSISTANT_URL" {print substr($0, index($0, "=") + 1); exit}' .env)
+  [[ -n $configured_ma_url ]] && MUSIC_ASSISTANT_URL=$configured_ma_url
+  configured_ma_token=$(awk -F= '$1 == "MUSIC_ASSISTANT_TOKEN" {print substr($0, index($0, "=") + 1); exit}' .env)
+  [[ -n $configured_ma_token ]] && MUSIC_ASSISTANT_TOKEN_CONFIGURED=yes
+  configured_ma_mock=$(awk -F= '$1 == "MUSIC_ASSISTANT_MOCK" {print substr($0, index($0, "=") + 1); exit}' .env)
+  [[ ${configured_ma_mock,,} == true ]] && MUSIC_ASSISTANT_MOCK=yes
+  configured_ma_control=$(awk -F= '$1 == "MUSIC_ASSISTANT_CONTROL_ENABLED" {print substr($0, index($0, "=") + 1); exit}' .env)
+  MUSIC_ASSISTANT_CONTROL_ENABLED=${configured_ma_control:-true}
 fi
 
 echo "Emily Doctor"
@@ -79,6 +91,21 @@ echo "Home Assistant control enabled:   $HOME_ASSISTANT_CONTROL_ENABLED"
 entity_payload=$(curl --silent --max-time 5 "http://127.0.0.1:${EMILY_PORT}/api/entities" 2>/dev/null || true)
 entity_count=$(printf '%s' "$entity_payload" | sed -n 's/.*"count":\([0-9][0-9]*\).*/\1/p' | head -n 1)
 if [[ -n $entity_count ]]; then echo "Discovered entity count:          $entity_count"; else echo "Discovered entity count:          unavailable"; fi
+
+echo
+echo "Music Assistant integration:"
+echo "Music Assistant mock mode:        $MUSIC_ASSISTANT_MOCK"
+echo "Music Assistant URL configured:   $([[ $MUSIC_ASSISTANT_URL == *host.docker.internal* ]] && echo no || echo yes)"
+echo "Music Assistant token configured: $MUSIC_ASSISTANT_TOKEN_CONFIGURED"
+echo "Music Assistant control enabled:  $MUSIC_ASSISTANT_CONTROL_ENABLED"
+ma_http_code=$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 5 "$MUSIC_ASSISTANT_URL" 2>/dev/null || true)
+if [[ $MUSIC_ASSISTANT_MOCK == yes ]]; then echo "Music Assistant reachable:        mock";
+elif [[ $ma_http_code == 000 || -z $ma_http_code ]]; then echo "Music Assistant reachable:        no";
+else echo "Music Assistant reachable:        yes"; fi
+if [[ $core_status == *'"music_assistant":{"connected":true'* || $MUSIC_ASSISTANT_MOCK == yes ]]; then echo "Music Assistant authenticated:     yes"; else echo "Music Assistant authenticated:     no"; fi
+ma_player_count=$(printf '%s' "$core_status" | sed -n 's/.*"music_player_count":\([0-9][0-9]*\).*/\1/p' | head -n 1)
+if [[ -n $ma_player_count ]]; then echo "Music Assistant player count:      $ma_player_count"; else echo "Music Assistant player count:      unavailable"; fi
+if [[ $core_status == *'"music_default_player":null'* || -z $core_status ]]; then echo "Music Assistant default player:    no"; else echo "Music Assistant default player:    yes"; fi
 
 echo
 echo "Listening ports:"

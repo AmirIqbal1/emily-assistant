@@ -19,6 +19,10 @@ from app.home_assistant import HomeAssistantBackend, HomeAssistantError, RealHom
 from app.intent_router import LocalIntentRouter
 from app.models import ChatRequest, ChatResponse, EntityListResponse, HomeAssistantEntity, StatusResponse
 from app.mock_home_assistant import MockHomeAssistantBackend
+from app.mock_music_assistant import MockMusicAssistantBackend
+from app.music import MusicToolExecutor
+from app.music_assistant import MusicAssistantBackend, MusicAssistantError, RealMusicAssistantBackend
+from app.models import MusicAssistantStatus, MusicNowPlayingResponse, MusicPlayersResponse
 from app.providers.local import LocalProvider
 from app.tools import ToolExecutor
 
@@ -78,7 +82,9 @@ def configure_logging(level: str) -> None:
 
 
 def create_app(
-    settings: Settings | None = None, home_assistant: HomeAssistantBackend | None = None
+    settings: Settings | None = None,
+    home_assistant: HomeAssistantBackend | None = None,
+    music_assistant: MusicAssistantBackend | None = None,
 ) -> FastAPI:
     settings = settings or get_settings()
     configure_logging(settings.emily_log_level)
@@ -89,13 +95,21 @@ def create_app(
     )
     entity_registry = EntityRegistry(home_assistant, settings.entity_cache_seconds)
     tools = ToolExecutor(entity_registry, EntityResolver(), settings.home_assistant_control_enabled)
-    local_provider = LocalProvider(settings.emily_name, LocalIntentRouter(), home_assistant, tools)
+    music_assistant = music_assistant or (
+        MockMusicAssistantBackend() if settings.music_assistant_mock
+        else RealMusicAssistantBackend(settings.music_assistant_url, settings.music_assistant_token, settings.music_assistant_cache_seconds)
+    )
+    music_tools = MusicToolExecutor(music_assistant, settings.music_assistant_control_enabled, settings.music_assistant_default_player)
+    local_provider = LocalProvider(settings.emily_name, LocalIntentRouter(), home_assistant, tools, music_tools)
     assistant = Assistant([local_provider])
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         app.state.started_at = time.monotonic()
-        yield
+        try:
+            yield
+        finally:
+            await app.state.music_assistant.close()
 
     app = FastAPI(
         title="Emily Core",
@@ -108,6 +122,7 @@ def create_app(
     app.state.home_assistant = home_assistant
     app.state.entity_registry = entity_registry
     app.state.assistant = assistant
+    app.state.music_assistant = music_assistant
     app.add_middleware(RequestSizeLimitMiddleware, max_bytes=settings.max_request_bytes)
 
     if settings.allowed_origins:
@@ -141,6 +156,11 @@ def create_app(
     @app.get("/api/status", response_model=StatusResponse)
     async def status(request: Request) -> StatusResponse:
         ha_status = await request.app.state.home_assistant.check_connection()
+        music_status = await request.app.state.music_assistant.check_connection()
+        try:
+            music_player_count = len(await request.app.state.music_assistant.players()) if music_status.connected else 0
+        except MusicAssistantError:
+            music_player_count = 0
         started_at = getattr(request.app.state, "started_at", time.monotonic())
         return StatusResponse(
             version=__version__,
@@ -153,7 +173,45 @@ def create_app(
             uptime_seconds=round(time.monotonic() - started_at, 3),
             server_time=datetime.now(timezone.utc).isoformat(),
             enabled_providers=assistant.enabled_provider_names,
+            music_assistant=music_status,
+            music_assistant_control_enabled=settings.music_assistant_control_enabled,
+            music_player_count=music_player_count,
+            music_default_player=settings.music_assistant_default_player or None,
         )
+
+    @app.get("/api/music/status", response_model=MusicAssistantStatus)
+    async def music_status(request: Request) -> MusicAssistantStatus:
+        return await request.app.state.music_assistant.check_connection()
+
+    @app.get("/api/music/players", response_model=MusicPlayersResponse)
+    async def music_players(request: Request) -> MusicPlayersResponse:
+        try:
+            players = await request.app.state.music_assistant.players()
+        except MusicAssistantError as error:
+            raise HTTPException(status_code=503, detail=error.message) from None
+        return MusicPlayersResponse(players=players, count=len(players))
+
+    @app.get("/api/music/now-playing", response_model=MusicNowPlayingResponse)
+    async def music_now_playing(request: Request, player: str | None = Query(default=None, max_length=100)) -> MusicNowPlayingResponse:
+        try:
+            players = await request.app.state.music_assistant.players()
+        except MusicAssistantError as error:
+            raise HTTPException(status_code=503, detail=error.message) from None
+        selected, error = music_tools.players.resolve(players, player or settings.music_assistant_default_player or None)
+        if error:
+            return MusicNowPlayingResponse(player=None)
+        return MusicNowPlayingResponse(player=selected)
+
+    @app.get("/api/music/search")
+    async def music_search(
+        request: Request,
+        q: str = Query(min_length=1, max_length=100),
+        media_type: str | None = Query(default=None, pattern="^(track|artist|album|playlist)$"),
+    ) -> list:
+        try:
+            return await request.app.state.music_assistant.search(q, media_type)
+        except MusicAssistantError as error:
+            raise HTTPException(status_code=503, detail=error.message) from None
 
     @app.post("/api/chat", response_model=ChatResponse, response_model_exclude_none=True)
     async def chat(payload: ChatRequest, request: Request) -> ChatResponse:

@@ -30,6 +30,12 @@ class Settings(BaseSettings):
     home_assistant_control_enabled: bool = Field(
         default=True, validation_alias="HOME_ASSISTANT_CONTROL_ENABLED"
     )
+    music_assistant_url: str = Field(default="http://host.docker.internal:8095", validation_alias="MUSIC_ASSISTANT_URL")
+    music_assistant_token: str = Field(default="", validation_alias="MUSIC_ASSISTANT_TOKEN")
+    music_assistant_mock: bool = Field(default=False, validation_alias="MUSIC_ASSISTANT_MOCK")
+    music_assistant_control_enabled: bool = Field(default=True, validation_alias="MUSIC_ASSISTANT_CONTROL_ENABLED")
+    music_assistant_default_player: str = Field(default="", validation_alias="MUSIC_ASSISTANT_DEFAULT_PLAYER")
+    music_assistant_cache_seconds: int = Field(default=30, ge=0, le=3600, validation_alias="MUSIC_ASSISTANT_CACHE_SECONDS")
     cors_origins: str = Field(default="", validation_alias="EMILY_CORS_ORIGINS")
     max_request_bytes: int = Field(
         default=16_384,

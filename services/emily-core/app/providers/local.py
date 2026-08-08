@@ -3,6 +3,7 @@ from datetime import datetime
 from app.home_assistant import HomeAssistantBackend
 from app.intent_router import IntentDetector
 from app.models import ChatResponse, ProviderContext
+from app.music import MusicToolExecutor
 from app.providers.base import AssistantProvider
 from app.tools import ToolExecutor
 
@@ -14,11 +15,13 @@ class LocalProvider(AssistantProvider):
         router: IntentDetector,
         home_assistant: HomeAssistantBackend,
         tools: ToolExecutor,
+        music_tools: MusicToolExecutor,
     ) -> None:
         self.assistant_name = assistant_name
         self.router = router
         self.home_assistant = home_assistant
         self.tools = tools
+        self.music_tools = music_tools
 
     @property
     def name(self) -> str:
@@ -53,6 +56,19 @@ class LocalProvider(AssistantProvider):
                 target=result.target,
             )
 
+        music_actions = {
+            "music.play": "play", "music.pause": "pause", "music.resume": "resume",
+            "music.stop": "stop", "music.next": "next", "music.previous": "previous",
+            "music.set_volume": "volume", "music.now_playing": "now_playing",
+            "music.list_players": "list_players", "music.get_state": "get_state",
+        }
+        if intent in music_actions:
+            action = music_actions[intent]
+            player_name = route.player_name if intent == "music.play" else route.target_name
+            value = route.target_name if intent == "music.play" else route.value
+            result = await self.music_tools.execute(action, player_name, value, route.media_type)
+            return ChatResponse(reply=result.reply, intent=intent, provider="music_assistant", success=result.success, tool=result.tool, target=result.target)
+
         if intent == "device.lock_control_blocked":
             return ChatResponse(
                 reply="I don't currently permit security-sensitive lock control.",
@@ -73,7 +89,7 @@ class LocalProvider(AssistantProvider):
             reply = f"The current server time is {datetime.now().astimezone():%H:%M}."
         elif intent == "capabilities":
             reply = (
-                "I can answer local questions, check Home Assistant, and control supported devices."
+                "I can answer local questions, check Home Assistant, control supported devices, and help with Music Assistant playback."
             )
         elif intent == "home_assistant_status":
             status = await self.home_assistant.check_connection()

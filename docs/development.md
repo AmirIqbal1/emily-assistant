@@ -31,3 +31,13 @@ make homeassistant-start
 Use `make homeassistant-stop` to stop it. A 401 or 403 means the token is invalid or lacks permission; connection refused or timeout usually means the URL is unreachable from Core.
 
 Device-changing commands require `HOME_ASSISTANT_CONTROL_ENABLED=true`. Locks are discovery and query only: all lock control remains blocked pending a future authorization and confirmation layer.
+
+## Mock Music Assistant
+
+Run both integrations locally without a server, speakers, or provider accounts:
+
+```bash
+make mock-all
+```
+
+Music state is retained while Core runs. Set `MUSIC_ASSISTANT_DEFAULT_PLAYER=Living Room Speaker` in `.env` if you want unqualified requests such as `play Oasis` to select that speaker. Otherwise Emily asks when more than one available player exists. See [Music Assistant](music-assistant.md) for real-server setup and the control-disable switch.

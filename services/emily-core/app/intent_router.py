@@ -25,6 +25,40 @@ class LocalIntentRouter(IntentDetector):
     def route(self, message: str) -> IntentResult:
         normalized = self._normalize(message)
 
+        if normalized in {"what music players are available", "what speakers are available", "list music players", "list speakers"}:
+            return IntentResult(intent="music.list_players")
+        match = re.fullmatch(r"(?:what song is playing|whats playing|what is playing|what song is this)(?: (?:in|on) (?:the )?(.+?))?", normalized)
+        if match:
+            return IntentResult(intent="music.now_playing", target_name=match.group(1))
+        match = re.fullmatch(r"is (?:the )?(.+?) (?:playing music|paused)", normalized)
+        if match:
+            return IntentResult(intent="music.get_state", target_name=match.group(1))
+        match = re.fullmatch(r"(?:pause|stop|resume|continue)(?: (?:the )?(.+?))?", normalized)
+        if match and "tv" not in (match.group(1) or ""):
+            command = normalized.split()[0]
+            intent = {"pause": "music.pause", "stop": "music.stop", "resume": "music.resume", "continue": "music.resume"}[command]
+            target = match.group(1)
+            if target:
+                target = re.sub(r"\b(?:the )?music\b", "", target).strip() or None
+                target = re.sub(r"^(?:in|on)\s+", "", target or "") or None
+            return IntentResult(intent=intent, target_name=target)
+        if normalized in {"next song", "next track", "skip song", "skip this song"}:
+            return IntentResult(intent="music.next")
+        if normalized in {"previous song", "previous track", "go back a song"}:
+            return IntentResult(intent="music.previous")
+        volume_music = re.fullmatch(r"(?:set (?:the )?(?:music|(.+? speaker|.+? music)) volume to|(?:music|(.+? speaker|.+? music)) volume) (-?\d+)(?: percent)?", normalized)
+        if volume_music:
+            target = volume_music.group(1) or volume_music.group(2)
+            target = re.sub(r"\s+music$", "", target).strip() if target else None
+            return IntentResult(intent="music.set_volume", target_name=target, value=int(volume_music.group(3)))
+        match = re.fullmatch(r"play (?:my )?(?:the )?(?:(song|track|artist|album|playlist) )?(.+?)(?: (?:in|on) (?:the )?(.+))?", normalized)
+        if match and "tv" not in normalized:
+            media_type = {"song": "track", "track": "track", "artist": "artist", "album": "album", "playlist": "playlist"}.get(match.group(1))
+            query = match.group(2)
+            if not media_type and query.endswith(" playlist"):
+                media_type, query = "playlist", query.removesuffix(" playlist")
+            return IntentResult(intent="music.play", target_name=query, player_name=match.group(3), media_type=media_type)
+
         # Device commands precede conversational v0.1 messages.
         volume = re.fullmatch(
             r"(?:set (?:the )?(.+?) volume to|volume (?:the )?(.+?) to) (-?\d+)(?: percent)?",
