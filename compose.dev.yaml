@@ -1,0 +1,8 @@
+services:
+  emily-core:
+    # Mount only Core source for live reload; Home Assistant runtime data remains untouched.
+    volumes:
+      - ./services/emily-core/app:/app/app:ro
+      - ./runtime/emily:/data
+    command:
+      ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8787", "--no-access-log", "--reload", "--reload-dir", "/app/app"]
